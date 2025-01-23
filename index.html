@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Random Drive Image</title>
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      background: #fafafa;
+    }
+    #randomImage {
+      max-width: 90%;
+      max-height: 80vh;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+    .error {
+      color: red;
+      margin-top: 20px;
+      font-size: 1.2em;
+    }
+    .loading {
+      font-size: 1.2em;
+      color: #555;
+    }
+  </style>
+</head>
+<body>
+  <div>
+    <div id="loadingMessage" class="loading">Loading random image...</div>
+    <img id="randomImage" src="" alt="Random Image" style="display:none" />
+    <div id="errorMessage" class="error" style="display:none"></div>
+  </div>
+
+  <script>
+    // 1) The main Web App URL from your RandomImageService
+    const MAIN_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzfsIA-AddukF4htyytQBod1bPlKji8Y3YPHnVwwKpccS8ISzYxiBeMtyVoVDcRa8PB9g/exec';
+
+    // Add a random "cacheBuster" parameter to avoid caching
+    const urlWithCacheBuster = `${MAIN_WEB_APP_URL}?cacheBuster=${Date.now()}`;
+
+    // Step A: Fetch the random image URL from the main script
+    fetch(urlWithCacheBuster)
+      .then(res => {
+        if (!res.ok) {
+          throw new Error(`Main script fetch failed. Status: ${res.status}`);
+        }
+        return res.json();
+      })
+      .then(data => {
+        if (!data.imageUrl) {
+          throw new Error(data.error || "No imageUrl returned from main script.");
+        }
+        // Step B: Fetch the data from ImageProxy (the dataUrl)
+        return fetch(data.imageUrl)
+          .then(proxyRes => {
+            if (!proxyRes.ok) {
+              throw new Error(`Proxy fetch failed. Status: ${proxyRes.status}`);
+            }
+            return proxyRes.json();
+          });
+      })
+      .then(proxyData => {
+        if (!proxyData.imageDataUrl) {
+          throw new Error(proxyData.error || "No imageDataUrl returned from proxy.");
+        }
+        // Step C: Set the <img> to the base64 data URL
+        const img = document.getElementById('randomImage');
+        img.src = proxyData.imageDataUrl;
+        img.style.display = 'block';
+        document.getElementById('loadingMessage').style.display = 'none';
+      })
+      .catch(err => {
+        console.error('Error:', err);
+        showError(err.message || 'Unknown error occurred');
+      });
+
+    function showError(msg) {
+      const errDiv = document.getElementById('errorMessage');
+      errDiv.textContent = msg;
+      errDiv.style.display = 'block';
+      document.getElementById('loadingMessage').style.display = 'none';
+      document.getElementById('randomImage').style.display = 'none';
+    }
+  </script>
+</body>
+</html>
