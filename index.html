@@ -4,14 +4,14 @@
   <meta charset="UTF-8">
   <title>Random Image from Google Drive</title>
   <style>
-    body {
-      text-align: center;
-      margin-top: 50px;
-      font-family: Arial, sans-serif;
+    body { 
+      text-align: center; 
+      margin-top: 50px; 
+      font-family: Arial, sans-serif; 
     }
-    img {
-      max-width: 90%;
-      height: auto;
+    img { 
+      max-width: 90%; 
+      height: auto; 
     }
   </style>
 </head>
@@ -63,10 +63,13 @@
       // Construct the direct image URL:
       const imageUrl = `https://drive.google.com/uc?export=view&id=${fileId}`;
       console.log("Image URL:", imageUrl);
-      // Note the addition of referrerpolicy="no-referrer"
+      // Note the addition of referrerpolicy and crossorigin attributes
       document.getElementById("image-container").innerHTML = `
-        <img src="${imageUrl}" alt="Random Image" referrerpolicy="no-referrer"
-          onerror="this.onerror=null; this.src=''; document.getElementById('image-container').innerHTML='<p>Failed to load image.</p>';">
+        <img src="${imageUrl}" 
+             alt="Random Image" 
+             referrerpolicy="no-referrer" 
+             crossorigin="anonymous"
+             onerror="this.onerror=null; this.src=''; document.getElementById('image-container').innerHTML='<p>Failed to load image.</p>';">
       `;
     }
 
