@@ -2,79 +2,119 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Random Image from Google Drive</title>
+  <title>Random Image from Dropbox</title>
   <style>
-    body { 
-      text-align: center; 
-      margin-top: 50px; 
-      font-family: Arial, sans-serif; 
+    body {
+      text-align: center;
+      margin-top: 50px;
+      font-family: Arial, sans-serif;
     }
-    img { 
-      max-width: 90%; 
-      height: auto; 
+    img {
+      max-width: 90%;
+      height: auto;
     }
   </style>
 </head>
 <body>
-  <h1>Random Image</h1>
+  <h1>Random Image from Dropbox</h1>
   <div id="image-container">
     <p>Loading image...</p>
   </div>
 
   <script>
     // --- Configuration ---
-    // Replace with your actual API key from Google Cloud Console:
-    const apiKey = "AIzaSyBH46BPwU62WRdRAqTOZgdCY4YEXRNVlI0";
-    // Your Google Drive folder ID:
-    const folderId = "1GEe1WLM-q4nlUX5JqbUD20UrqrmwgZ5A";
+    // Replace with your Dropbox API access token.
+    const DROPBOX_ACCESS_TOKEN = "sl.u.AFgzAx2SfdhGdzAZ9EvOLTm0zfif0FJtL-yRVs06zYAuXRCfpGQLNfxLi-s3a-oQaxy9eMOnjiVnuf6U2FsG4J8GPUkLZGiZndFp3-ZCTQlct2ueq3VUcYRHZ7Igj0szXLj2qDcMNsxirdt-cYxS3LQQqBGt4vYFLvy7MYZwIiDqDwmsodDXb2ugy3KSO6QuflD2Bj8jtHlnjcdlQVkX2HamA2ETWmEtZlPGVDSmrBW9ZQzDgaEGuitb9QKcvrBdo9apWPR3HVuaYigjQj5psbb3FbjQY3AmTUKJbPuRONBw0HxNELu9qsGVGZ-lExC__MKg9heUXJSZkY2SMzBgEYRMnIItsZv5dSafSQN0ZmbfaWW8oga8VYFMaSzLConv_WlpEmQYutR6I-2GRW0nhrhZ3_It_RKj8el_MDPJIueExz3Wv1JHfbWilMRDbakn5MCqC_SxFGNNVeLZAiR3YaSm8WnbBBM7MnTEdfyOw5xuniSOzVubjEyXhhG9d5CaK1sGxqUdfX0BaRjpi8gwgpDyUjbhLKbqNWshNxwyriDWNf-7d3R8CpNp19RHOq38AIi4EMYOozjXjlYV9IpzOeSbHVr-DIyOboeaGJds4Y8Y1r99Y0gK5lKdTHpIdAFNaHtv47CP5sS19o3mArQFJDjAIeRxgtmJl0zfLLerMSrwnKBjHMRmxFVcImWx04Azcyu6j90OfbFcpbJSPr9n1daJGfaNRPI9vnvO87x6fkW41ZiNSxrocvkxKGkbSqfAr6RqIS6MSBIIKcnvhBcrM8zt1wAVDvu6JkI6GGpRJYIj_0lXUd1rb0jh1ui9o9FcWjtoBrwAu9eZhEKmR-yStUM6yD8R43TN_Cwinxhb5wYGcKVs2ImzQPdVOasn3onCBpFk-GPGlRvsZPYMtMtvmZUzYJnIm__eS-iQei6fKxxlGY90DWteu9KU-e-zDMfzhwQI-4uIXzH0F-74UfOctsF0qz5HOjR1fuJa_rEayPmbFe-X3xTzWjrcjsQp421hqpB5s7sG0n-1RCxoUr4aBNMaUJFS73Nx_xjEYb717uY9ArZ5ozytL7FILgJrQt9lTbD3abZi3Ov9u1w5u1iymaV1eTQO3NaGMlYIQMiUZH3ttgYGpFliOJS1mGOMHhLpPv33h6N9qXYonl5_mVExJLDrU_eSSSuWHR3BmVhC-HNGKolxbcK-jFa483sPaDl2UqmaCu1Kd7oe_ZeVTz1wxLKKLd9DRqI1YzwJ4Kdyai0R2oYandR6Vq4thCjNrCQO5d-k9hSXVh6gzljJgqV2WqFf";
+    // Replace with the path to your Dropbox folder (e.g., "/RandomImages") or "" for the root folder.
+    const DROPBOX_FOLDER_PATH = "/RandomImage";
 
-    // --- Function to list image files in the folder using the Drive API ---
-    function listFiles() {
-      // Build the query:
-      // - Files whose parent is the folderId.
-      // - MIME type contains 'image/'.
-      // - Exclude trashed files.
-      const query = `'${folderId}' in parents and mimeType contains 'image/' and trashed = false`;
-      const url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&fields=files(id,name)&key=${apiKey}`;
-      console.log("Fetching URL:", url);
+    /**
+     * List the contents of a Dropbox folder.
+     */
+    function listDropboxFiles() {
+      return fetch("https://api.dropboxapi.com/2/files/list_folder", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + DROPBOX_ACCESS_TOKEN
+        },
+        body: JSON.stringify({
+          path: DROPBOX_FOLDER_PATH,
+          recursive: false,
+          include_media_info: false,
+          include_deleted: false,
+          include_has_explicit_shared_members: false
+        })
+      }).then(response => response.json());
+    }
 
-      fetch(url)
-        .then(response => response.json())
+    /**
+     * Get a temporary link for a file from Dropbox.
+     */
+    function getTemporaryLink(filePath) {
+      return fetch("https://api.dropboxapi.com/2/files/get_temporary_link", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + DROPBOX_ACCESS_TOKEN
+        },
+        body: JSON.stringify({ path: filePath })
+      }).then(response => response.json());
+    }
+
+    /**
+     * Check if the filename has an image extension.
+     */
+    function isImageFile(fileName) {
+      return /\.(jpe?g|png|gif|bmp|webp)$/i.test(fileName);
+    }
+
+    /**
+     * Load a random image from the Dropbox folder.
+     */
+    function loadRandomImage() {
+      listDropboxFiles()
         .then(data => {
-          console.log("API Response:", data);
-          if (data.files && data.files.length > 0) {
-            // Pick a random file:
-            const randomIndex = Math.floor(Math.random() * data.files.length);
-            const randomFile = data.files[randomIndex];
+          console.log("Dropbox folder data:", data);
+          if (data.entries && data.entries.length > 0) {
+            // Filter entries for image files only.
+            const imageFiles = data.entries.filter(entry => entry[".tag"] === "file" && isImageFile(entry.name));
+            if (imageFiles.length === 0) {
+              document.getElementById("image-container").innerHTML = "<p>No images found in the Dropbox folder.</p>";
+              return;
+            }
+            // Pick a random image file.
+            const randomIndex = Math.floor(Math.random() * imageFiles.length);
+            const randomFile = imageFiles[randomIndex];
             console.log("Selected file:", randomFile);
-            displayImage(randomFile.id);
+            // Get a temporary link for the selected file.
+            return getTemporaryLink(randomFile.path_lower);
           } else {
-            document.getElementById("image-container").innerHTML = "<p>No images found in the folder.</p>";
+            document.getElementById("image-container").innerHTML = "<p>No files found in the Dropbox folder.</p>";
+          }
+        })
+        .then(linkData => {
+          if (linkData && linkData.link) {
+            console.log("Temporary link:", linkData.link);
+            document.getElementById("image-container").innerHTML = `
+              <img src="${linkData.link}" 
+                   alt="Random Image from Dropbox" 
+                   referrerpolicy="no-referrer" 
+                   crossorigin="anonymous"
+                   onerror="this.onerror=null; this.src=''; document.getElementById('image-container').innerHTML='<p>Failed to load image.</p>';">
+            `;
+          } else {
+            document.getElementById("image-container").innerHTML = "<p>Could not retrieve image link.</p>";
           }
         })
         .catch(error => {
-          console.error("Error fetching files:", error);
-          document.getElementById("image-container").innerHTML = "<p>Error fetching images.</p>";
+          console.error("Error loading image:", error);
+          document.getElementById("image-container").innerHTML = "<p>Error loading image.</p>";
         });
     }
 
-    // --- Function to display the image given a file ID ---
-    function displayImage(fileId) {
-      // Construct the direct image URL:
-      const imageUrl = `https://drive.google.com/uc?export=view&id=${fileId}`;
-      console.log("Image URL:", imageUrl);
-      // Note the addition of referrerpolicy and crossorigin attributes
-      document.getElementById("image-container").innerHTML = `
-        <img src="${imageUrl}" 
-             alt="Random Image" 
-             referrerpolicy="no-referrer" 
-             crossorigin="anonymous"
-             onerror="this.onerror=null; this.src=''; document.getElementById('image-container').innerHTML='<p>Failed to load image.</p>';">
-      `;
-    }
-
-    // --- Run the function on page load ---
-    window.onload = listFiles;
+    // Run the function on page load.
+    window.onload = loadRandomImage;
   </script>
 </body>
 </html>
