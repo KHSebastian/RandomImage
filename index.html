@@ -1,60 +1,70 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Random Drive Image</title>
+  <meta charset="UTF-8">
+  <title>Random Image from Google Drive</title>
   <style>
-    body {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      margin: 0;
-      background: #fafafa;
+    body { 
+      text-align: center; 
+      margin-top: 50px; 
+      font-family: Arial, sans-serif; 
     }
-    #randomImage {
-      max-width: 90%;
-      max-height: 80vh;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    img { 
+      max-width: 90%; 
+      height: auto; 
     }
-    .loading, .error {
-      font-size: 1.2em;
-      margin-top: 20px;
-    }
-    .error { color: red; }
   </style>
 </head>
 <body>
-  <div>
-    <img id="randomImage" src="" alt="Random Image" />
-    <div id="loadingMessage" class="loading">Loading random image...</div>
-    <div id="errorMessage" class="error" style="display:none"></div>
+  <h1>Random Image</h1>
+  <div id="image-container">
+    <p>Loading image...</p>
   </div>
 
   <script>
-    // Your deployed web app URL (serving the random image blob)
-    const RANDOM_IMAGE_URL = 'https://script.google.com/macros/s/AKfycbz-vhhlYhG9swZS0dkdJLcRtzY4oIr2rUb9Zsj4x3So4GI4zJh23GqS_0RukTCuhO_c/exec';
-    
-    // Add a cache buster to ensure a fresh image on each load.
-    const urlWithCacheBuster = `${RANDOM_IMAGE_URL}?cacheBuster=${Date.now()}`;
+    // --- Configuration ---
+    // Replace with your API key from Google Cloud Console:
+    const apiKey = "AIzaSyBH46BPwU62WRdRAqTOZgdCY4YEXRNVlI0";
+    // Your Google Drive folder ID:
+    const folderId = "1GEe1WLM-q4nlUX5JqbUD20UrqrmwgZ5A";
 
-    // Set the image src to load the blob directly.
-    const img = document.getElementById('randomImage');
-    img.onload = function() {
-      document.getElementById('loadingMessage').style.display = 'none';
-    };
-    img.onerror = function() {
-      showError('Error loading image.');
-    };
-    img.src = urlWithCacheBuster;
+    // --- Function to list image files in the folder using the Drive API ---
+    function listFiles() {
+      // Build the query:
+      //  - Files whose parent is the folderId.
+      //  - MIME type contains 'image/'.
+      //  - Exclude trashed files.
+      const query = `'${folderId}' in parents and mimeType contains 'image/' and trashed = false`;
+      const url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&fields=files(id,name)&key=${apiKey}`;
 
-    function showError(msg) {
-      const errDiv = document.getElementById('errorMessage');
-      errDiv.textContent = msg;
-      errDiv.style.display = 'block';
-      document.getElementById('loadingMessage').style.display = 'none';
+      fetch(url)
+        .then(response => response.json())
+        .then(data => {
+          if (data.files && data.files.length > 0) {
+            // Pick a random file:
+            const randomIndex = Math.floor(Math.random() * data.files.length);
+            const randomFile = data.files[randomIndex];
+            displayImage(randomFile.id);
+          } else {
+            document.getElementById('image-container').innerHTML = "<p>No images found in the folder.</p>";
+          }
+        })
+        .catch(error => {
+          console.error('Error fetching files:', error);
+          document.getElementById('image-container').innerHTML = "<p>Error fetching images.</p>";
+        });
     }
+
+    // --- Function to display the image given a file ID ---
+    function displayImage(fileId) {
+      // Construct a direct link to the image:
+      // The URL format https://drive.google.com/uc?export=view&id=FILE_ID works for embedding.
+      const imageUrl = `https://drive.google.com/uc?export=view&id=${fileId}`;
+      document.getElementById('image-container').innerHTML = `<img src="${imageUrl}" alt="Random Image">`;
+    }
+
+    // --- Run the function on page load ---
+    window.onload = listFiles;
   </script>
 </body>
 </html>
