@@ -4,14 +4,14 @@
   <meta charset="UTF-8">
   <title>Random Image from Google Drive</title>
   <style>
-    body { 
-      text-align: center; 
-      margin-top: 50px; 
-      font-family: Arial, sans-serif; 
+    body {
+      text-align: center;
+      margin-top: 50px;
+      font-family: Arial, sans-serif;
     }
-    img { 
-      max-width: 90%; 
-      height: auto; 
+    img {
+      max-width: 90%;
+      height: auto;
     }
   </style>
 </head>
@@ -23,7 +23,7 @@
 
   <script>
     // --- Configuration ---
-    // Replace with your API key from Google Cloud Console:
+    // Replace with your actual API key from Google Cloud Console:
     const apiKey = "AIzaSyBH46BPwU62WRdRAqTOZgdCY4YEXRNVlI0";
     // Your Google Drive folder ID:
     const folderId = "1GEe1WLM-q4nlUX5JqbUD20UrqrmwgZ5A";
@@ -31,36 +31,43 @@
     // --- Function to list image files in the folder using the Drive API ---
     function listFiles() {
       // Build the query:
-      //  - Files whose parent is the folderId.
-      //  - MIME type contains 'image/'.
-      //  - Exclude trashed files.
+      // - Files whose parent is the folderId.
+      // - MIME type contains 'image/'.
+      // - Exclude trashed files.
       const query = `'${folderId}' in parents and mimeType contains 'image/' and trashed = false`;
       const url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&fields=files(id,name)&key=${apiKey}`;
+      console.log("Fetching URL:", url);
 
       fetch(url)
         .then(response => response.json())
         .then(data => {
+          console.log("API Response:", data);
           if (data.files && data.files.length > 0) {
             // Pick a random file:
             const randomIndex = Math.floor(Math.random() * data.files.length);
             const randomFile = data.files[randomIndex];
+            console.log("Selected file:", randomFile);
             displayImage(randomFile.id);
           } else {
-            document.getElementById('image-container').innerHTML = "<p>No images found in the folder.</p>";
+            document.getElementById("image-container").innerHTML = "<p>No images found in the folder.</p>";
           }
         })
         .catch(error => {
-          console.error('Error fetching files:', error);
-          document.getElementById('image-container').innerHTML = "<p>Error fetching images.</p>";
+          console.error("Error fetching files:", error);
+          document.getElementById("image-container").innerHTML = "<p>Error fetching images.</p>";
         });
     }
 
     // --- Function to display the image given a file ID ---
     function displayImage(fileId) {
-      // Construct a direct link to the image:
-      // The URL format https://drive.google.com/uc?export=view&id=FILE_ID works for embedding.
+      // Construct the direct image URL:
       const imageUrl = `https://drive.google.com/uc?export=view&id=${fileId}`;
-      document.getElementById('image-container').innerHTML = `<img src="${imageUrl}" alt="Random Image">`;
+      console.log("Image URL:", imageUrl);
+      // Note the addition of referrerpolicy="no-referrer"
+      document.getElementById("image-container").innerHTML = `
+        <img src="${imageUrl}" alt="Random Image" referrerpolicy="no-referrer"
+          onerror="this.onerror=null; this.src=''; document.getElementById('image-container').innerHTML='<p>Failed to load image.</p>';">
+      `;
     }
 
     // --- Run the function on page load ---
